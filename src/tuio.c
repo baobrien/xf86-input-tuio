@@ -192,7 +192,7 @@ TuioPreInit(InputDriverPtr drv,
 
     } else {
 
-        if (!(pTuio = xcalloc(1, sizeof(TuioDeviceRec)))) {
+        if (!(pTuio = malloc(sizeof(TuioDeviceRec)))) {
             xf86DeleteInput(pInfo, 0);
             return NULL;
         }
@@ -332,7 +332,7 @@ TuioReadInput(InputInfoPtr pInfo)
                     objtmp = obj->next;
                     obj = _object_remove(obj_list, obj->id);
                     _subdev_add(pInfo, obj->subdev);
-                    xfree(obj);
+                    free(obj);
                     obj = objtmp;
 
 
@@ -443,7 +443,7 @@ finish:     xf86AddEnabledDevice(pInfo);
             device->public.on = TRUE;
 
             /* Allocate device storage and add to device list */
-            subdev = xcalloc(1, sizeof(SubDeviceRec));
+            subdev = malloc(sizeof(SubDeviceRec));
             subdev->pInfo = pInfo;
             _subdev_add(g_pInfo, subdev);
             break;
@@ -492,11 +492,11 @@ _free_tuiodev(TuioDevicePtr pTuio) {
 
     while (obj != NULL) {
         tmp = obj->next;
-        xfree(obj);
+        free(obj);
         obj = tmp;
     }
 
-    xfree(pTuio);
+    free(pTuio);
 }
 
 /**
@@ -620,7 +620,7 @@ _object_get(ObjectPtr head, int id) {
  */
 static ObjectPtr 
 _object_new(int id) {
-    ObjectPtr new_obj = xcalloc(1, sizeof(ObjectRec));
+    ObjectPtr new_obj = malloc(sizeof(ObjectRec));
 
     new_obj->id = id;
     new_obj->alive = True;
@@ -737,7 +737,7 @@ _subdev_remove(InputInfoPtr pInfo, InputInfoPtr sub_pInfo)
     if (subdev != NULL && subdev->pInfo == sub_pInfo) {
         found = True;
         *subdev_list = subdev->next;
-        xfree(subdev);
+        free(subdev);
     } else if (subdev != NULL) {
         last = subdev;
         subdev = subdev->next;
@@ -745,7 +745,7 @@ _subdev_remove(InputInfoPtr pInfo, InputInfoPtr sub_pInfo)
             if (subdev->pInfo == sub_pInfo) {
                 last->next = subdev->next;
                 found = True;
-                xfree(subdev);
+                free(subdev);
                 break;
             }
             last = subdev;
@@ -758,7 +758,7 @@ _subdev_remove(InputInfoPtr pInfo, InputInfoPtr sub_pInfo)
     if (!found) {
         while (obj != NULL) {
             if (obj->subdev != NULL && obj->subdev->pInfo == sub_pInfo) {
-                xfree(obj->subdev);
+                free(obj->subdev);
                 obj->subdev = NULL;
                 found = True;
                 break;
@@ -781,12 +781,12 @@ _init_buttons(DeviceIntPtr device)
     int                 ret = Success;
     int i;
 
-    map = xcalloc(numbuttons, sizeof(CARD8));
-    labels = xcalloc(numbuttons, sizeof(Atom));
+    map = malloc(numbuttons * sizeof(CARD8));
+    labels = malloc(numbuttons * sizeof(Atom));
     for (i=0; i<numbuttons; i++)
         map[i] = i;
 
-    //map = xcalloc(1, sizeof(CARD8));
+    //map = malloc(sizeof(CARD8));
     //*map = 3;
     //label = XIGetKnownProperty("Button Left");
 
@@ -799,7 +799,7 @@ _init_buttons(DeviceIntPtr device)
         ret = BadAlloc;
     }
 
-    xfree(labels);
+    free(labels);
     return ret;
 }
 
@@ -814,7 +814,7 @@ _init_axes(DeviceIntPtr device)
     const int           num_axes = 5;
     Atom *atoms;
 
-    atoms = xcalloc(num_axes, sizeof(Atom));
+    atoms = malloc(num_axes * sizeof(Atom));
     //atom[0] = XI
 
     if (!InitValuatorClassDeviceStruct(device,
@@ -976,7 +976,7 @@ _hal_create_devices(InputInfoPtr pInfo, int num) {
             return 1;
         }
 
-        xfree(name);
+        free(name);
         pTuio->num_subdev++;
     }
 
