@@ -21,6 +21,7 @@
  *
  * Authors:
  *	Ryan Huffman (ryanhuffman@gmail.com)
+ *	Andreas Willich (sabotageandi@gmail.com)
  */
 
 #ifdef HAVE_CONFIG_H
