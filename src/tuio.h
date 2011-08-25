@@ -29,7 +29,6 @@
 #include <X11/extensions/XI.h>
 #include <xf86Xinput.h>
 #include <lo/lo.h>
-#include <hal/libhal.h>
 
 #ifndef Bool
 #define Bool int
