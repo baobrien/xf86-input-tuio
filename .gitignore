@@ -21,4 +21,4 @@ src/Makefile
 src/Makefile.in
 stamp-h1
 xorg-tuio.pc
-
+~*

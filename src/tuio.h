@@ -22,6 +22,7 @@
  * Authors:
  *	Ryan Huffman (ryanhuffman@gmail.com)
  *	Andreas Willich (sabotageandi@gmail.com)
+ *	Brady O'Brien (baobrien@evtron.com)
  */
 
 #ifndef TUIO_H 
