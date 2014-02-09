@@ -401,7 +401,7 @@ TuioControl(DeviceIntPtr device,
     {
         case DEVICE_INIT:
             xf86Msg(X_INFO, "%s: Init\n", pInfo->name);
-            _init_buttons(device);
+            //_init_buttons(device);
             _init_axes(device);
 
             /* If this is a "core" device, create object devices */

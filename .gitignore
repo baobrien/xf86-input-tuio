@@ -28,3 +28,4 @@ xorg-tuio.pc
 *.lai
 *.so
 *.o
+tuio_drv.so
