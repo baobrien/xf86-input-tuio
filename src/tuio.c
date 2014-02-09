@@ -245,7 +245,7 @@ TuioPreInit(InputDriverPtr drv,
     /* Set up InputInfoPtr */
     //(pInfo->name = xstrdup(dev->identifier);
     pInfo->flags = 0;
-    pInfo->type_name = strdup(XI_TOUCHSCREEN); /* FIXME: Correct type? */
+    pInfo->type_name = strdup(XI_TOUCHSCREEN); /* FIXME: Correct type? */ /* Now it is */
     //pInfo->conf_idev = dev;
     pInfo->read_input = pTuio ? TuioReadInput : TuioObjReadInput; /* Set callback */
     pInfo->device_control = TuioControl; /* Set callback */
@@ -291,7 +291,8 @@ TuioReadInput(InputInfoPtr pInfo)
     SubDevicePtr *subdev_list = &pTuio->subdev_list;
     ObjectPtr objtmp;
     int valuators[NUM_VALUATORS];
-
+    
+    ValuatorMask * vmask = valuator_mask_new(NUM_VALUATORS);
     while (xf86WaitForInput(pInfo->fd, 0) > 0)
     {
         /* The liblo handler will set this flag if anything was processed */
@@ -317,16 +318,19 @@ TuioReadInput(InputInfoPtr pInfo)
                         /* Post button "up" event */
                         xf86PostButtonEvent(obj->subdev->pInfo->dev, TRUE, 1, FALSE, 0, 0);
                     }
-                    valuators[0] = 0x7FFFFFFF;
-                    valuators[1] = 0x7FFFFFFF;
-                    valuators[2] = 0;
-                    valuators[3] = 0;
+                    valuators[0] = obj->xpos * 0x7FFFFFFF;
+                    valuators[1] = obj->ypos * 0x7FFFFFFF;
+                    valuators[2] = obj->xvel * 0x7FFFFFFF;
+                    valuators[3] = obj->yvel * 0x7FFFFFFF;
+                    valuator_mask_set_range(vmask,0,NUM_VALUATORS,valuators);
 
-                    xf86PostMotionEventP(obj->subdev->pInfo->dev,
-                            TRUE, /* is_absolute */
-                            0, /* first_valuator */
-                            NUM_VALUATORS, /* num_valuators */
-                            valuators);
+                    xf86PostTouchEvent(pInfo->dev,obj->id,XI_TouchEnd,0,vmask);
+
+                    //xf86PostMotionEventP(obj->subdev->pInfo->dev,
+                    //        TRUE, /* is_absolute */
+                    //        0, /* first_valuator */
+                    //        NUM_VALUATORS, /* num_valuators */
+                    //       valuators);
 
                     objtmp = obj->next;
                     obj = _object_remove(obj_list, obj->id);
@@ -352,17 +356,23 @@ TuioReadInput(InputInfoPtr pInfo)
                         valuators[1] = obj->ypos * 0x7FFFFFFF;
                         valuators[2] = obj->xvel * 0x7FFFFFFF;
                         valuators[3] = obj->yvel * 0x7FFFFFFF;
-
-                        xf86PostMotionEventP(obj->subdev->pInfo->dev,
-                                TRUE, /* is_absolute */
-                                0, /* first_valuator */
-                                NUM_VALUATORS, /* num_valuators */
-                                valuators);
+			valuator_mask_set_range(vmask,0,NUM_VALUATORS,valuators);
+			
+                        //(xf86PostMotionEventP(obj->subdev->pInfo->dev,
+                        //        TRUE, /* is_absolute */
+                        //        0, /* first_valuator */
+                        //        NUM_VALUATORS, /* num_valuators */
+                        //        valuators);
                         
+			//Object is new to screen and should be added
                         if (obj->pending.button) {
-                            xf86PostButtonEvent(obj->subdev->pInfo->dev, TRUE, 1, TRUE, 0, 0);
+                          //  xf86PostButtonEvent(obj->subdev->pInfo->dev, TRUE, 1, TRUE, 0, 0);
+				xf86PostTouchEvent(pInfo->dev,obj->id,XI_TouchBegin,0,vmask);
                             obj->pending.button = False;
-                        }
+                        }else {
+				xf86PostTouchEvent(pInfo->dev,obj->id,XI_TouchUpdate,0,vmask);
+			}
+
                     }
                     obj->alive = 0; /* Reset for next message */
                     obj = obj->next;
@@ -371,6 +381,7 @@ TuioReadInput(InputInfoPtr pInfo)
             pTuio->fseq_old = pTuio->fseq_new;
         }
     }
+    valuator_mask_free(&vmask);
 }
 
 /**
