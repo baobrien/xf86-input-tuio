@@ -34,6 +34,7 @@
 #include <xf86Xinput.h>
 #include <xf86_OSlib.h>
 #include <xserver-properties.h>
+#include <xf86Module.h>
 
 #include "tuio.h"
 
@@ -49,8 +50,8 @@ static void
 TuioUnplug(pointer);
 
 /* Driver Functions */
-static InputInfoPtr
-TuioPreInit(InputDriverPtr, IDevPtr, int);
+static int
+TuioPreInit(InputDriverPtr,InputInfoPtr , int);
 
 static void
 TuioUnInit(InputDriverPtr, InputInfoPtr, int);
@@ -115,7 +116,7 @@ _subdev_get(InputInfoPtr pInfo, SubDevicePtr *subdev_list);
 /* Driver information */
 static XF86ModuleVersionInfo TuioVersionRec =
 {
-    "tuio",
+    "tuio_mt",
     MODULEVENDORSTRING,
     MODINFOSTRING1,
     MODINFOSTRING2,
@@ -130,7 +131,7 @@ static XF86ModuleVersionInfo TuioVersionRec =
 _X_EXPORT InputDriverRec TUIO = 
 {
     1,
-    "tuio",
+    "tuio_mt",
     NULL,
     TuioPreInit,
     TuioUnInit,
@@ -169,28 +170,28 @@ TuioUnplug(pointer	p)
  * or an extension "Object" device that is used for routing individual object
  * events through.
  */
-static InputInfoPtr
+static int
 TuioPreInit(InputDriverPtr drv,
-            IDevPtr dev,
+            InputInfoPtr    pInfo,//IDevPtr dev,
             int flags)
 {
-    InputInfoPtr  pInfo;
+    //InputInfoPtr  pInfo;
     TuioDevicePtr pTuio = NULL;
     ObjectPtr obj;
     char *type;
     int num_subdev, tuio_port;
 
-    if (!(pInfo = xf86AllocateInput(drv, 0)))
-        return NULL;
+    //if (!(pInfo = xf86AllocateInput(drv, 0)))
+     //   return NULL;
 
     /* If Type == Object, this is a device for an object to use */
-    type = xf86CheckStrOption(dev->commonOptions, "Type", NULL); 
+    /*type = xf86CheckStrOption(dev->commonOptions, "Type", NULL); 
 
     if (type != NULL && strcmp(type, "Object") == 0) {
         xf86Msg(X_INFO, "%s: TUIO subdevice found\n", dev->identifier);
 
     } else {
-
+*/
         if (!(pTuio = malloc(sizeof(TuioDeviceRec)))) {
             xf86DeleteInput(pInfo, 0);
             return NULL;
@@ -202,7 +203,7 @@ TuioPreInit(InputDriverPtr drv,
         pTuio->num_subdev = 0;
 
         /* Get the number of subdevices we need to create */
-        num_subdev = xf86CheckIntOption(dev->commonOptions, "SubDevices",
+        num_subdev = xf86SetIntOption(pInfo->options, "SubDevices",
                 DEFAULT_SUBDEVICES); 
         if (num_subdev > MAX_SUBDEVICES) {
             num_subdev = MAX_SUBDEVICES;
@@ -212,52 +213,51 @@ TuioPreInit(InputDriverPtr drv,
         pTuio->init_num_subdev = num_subdev;
 
         /* Get the TUIO port number to use */
-        tuio_port = xf86CheckIntOption(dev->commonOptions, "Port", DEFAULT_PORT);
+        tuio_port = xf86SetIntOption(pInfo->options, "Port", DEFAULT_PORT);
         if (tuio_port < 0 || tuio_port > 65535) {
             xf86Msg(X_INFO, "%s: Invalid port number (%i), defaulting to %i\n",
-                    dev->identifier, tuio_port, DEFAULT_PORT);
+                    pInfo->name, tuio_port, DEFAULT_PORT);
             tuio_port = DEFAULT_PORT;
         }
         xf86Msg(X_INFO, "%s: TUIO UDP Port set to %i\n",
-                dev->identifier, tuio_port);
+                pInfo->name, tuio_port);
         pTuio->tuio_port = tuio_port;
 
         /* Get setting for checking fseq numbers in TUIO packets */
-        pTuio->fseq_threshold= xf86CheckIntOption(dev->commonOptions,
+        pTuio->fseq_threshold= xf86SetIntOption(pInfo->options,
                 "FseqThreshold", DEFAULT_FSEQ_THRESHOLD);
         if (pTuio->fseq_threshold < 0) {
             pTuio->fseq_threshold = 0;
         }
         xf86Msg(X_INFO, "%s: FseqThreshold set to %i\n",
-                dev->identifier, pTuio->fseq_threshold);
+                pInfo->name, pTuio->fseq_threshold);
 
         /* Get setting for whether to send button events or not with
          * object add & remove */
-        pTuio->post_button_events = xf86CheckBoolOption(dev->commonOptions,
+        pTuio->post_button_events = xf86SetBoolOption(pInfo->options,
                 "PostButtonEvents", True);
 
         /* Get setting for whether to hide devices when idle */
-        pTuio->hide_devices = xf86CheckBoolOption(dev->commonOptions,
+        pTuio->hide_devices = xf86SetBoolOption(pInfo->options,
                 "PseudoHide", True);
-    }
+    //}
 
     /* Set up InputInfoPtr */
-    pInfo->name = xstrdup(dev->identifier);
+    //(pInfo->name = xstrdup(dev->identifier);
     pInfo->flags = 0;
-    pInfo->type_name = XI_TOUCHSCREEN; /* FIXME: Correct type? */
-    pInfo->conf_idev = dev;
+    pInfo->type_name = strdup(XI_TOUCHSCREEN); /* FIXME: Correct type? */
+    //pInfo->conf_idev = dev;
     pInfo->read_input = pTuio ? TuioReadInput : TuioObjReadInput; /* Set callback */
     pInfo->device_control = TuioControl; /* Set callback */
     pInfo->switch_mode = NULL;
     
     /* Process common device options */
-    xf86CollectInputOptions(pInfo, NULL, NULL);
+    xf86CollectInputOptions(pInfo, NULL);
     xf86ProcessCommonOptions(pInfo, pInfo->options);
 
-    pInfo->flags |= XI86_OPEN_ON_INIT;
-    pInfo->flags |= XI86_CONFIGURED;
+    //pInfo->flags |= XI86_OPEN_ON_INIT;
+    //pInfo->flags |= XI86_CONFIGURED;
 
-    return pInfo;
 }
 
 /**
@@ -835,7 +835,7 @@ _init_axes(DeviceIntPtr device)
 #if GET_ABI_MAJOR(ABI_XINPUT_VERSION) >= 7
                                    atoms[i],
 #endif
-                                   0, 0x7FFFFFFF, 1, 1, 1);
+                                   0, 0x7FFFFFFF, 1, 1, 1,1);
         xf86InitValuatorDefaults(device, i);
     }
 
@@ -846,13 +846,13 @@ _init_axes(DeviceIntPtr device)
 #if GET_ABI_MAJOR(ABI_XINPUT_VERSION) >= 7
                                    atoms[i],
 #endif
-                                   0x80000000, 0x7FFFFFFF, 1, 1, 1);
+                                   0x80000000, 0x7FFFFFFF, 1, 1, 1,1);
         xf86InitValuatorDefaults(device, i);
     }
 
     /* Use absolute mode.  Currently, TUIO coords are mapped to the
      * full screen area */
-    pInfo->dev->valuator->mode = Absolute;
+    //pInfo->dev->valuator->mode = Absolute;
     if (!InitAbsoluteClassDeviceStruct(device))
         return BadAlloc;
 
