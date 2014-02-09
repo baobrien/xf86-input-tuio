@@ -23,3 +23,8 @@ stamp-h1
 xorg-tuio.pc
 *~
 ~*
+*.la
+*.lc
+*.lai
+*.so
+*.o
